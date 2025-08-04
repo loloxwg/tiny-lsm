@@ -29,6 +29,7 @@ struct SkipListNode {
                uint64_t tranc_id)
       : key_(k), value_(v), forward_(level, nullptr),
         backward_(level, std::weak_ptr<SkipListNode>()), tranc_id_(tranc_id) {}
+
   void set_backward(int level, std::shared_ptr<SkipListNode> node) {
     backward_[level] = std::weak_ptr<SkipListNode>(node);
   }
@@ -112,9 +113,22 @@ public:
   SkipList(int max_lvl = 16); // 构造函数，初始化跳表
 
   // 析构函数需要确保没有其他线程访问
+  // 手动断开节点连接以避免递归析构导致的栈溢出
+  // 注意：macOS Clang debug 模式下没有尾递归优化，递归析构可能导致栈溢出
   ~SkipList() {
     // std::unique_lock<std::shared_mutex> lock(rw_mutex);
-    // ... 清理资源
+    auto current = head;
+    while (current && current->forward_[0]) {
+      auto next = current->forward_[0];
+      // 手动释放当前节点的所有前向指针，避免递归调用
+      for (size_t i = 0; i < current->forward_.size(); ++i) {
+        current->forward_[i].reset();
+      }
+      current = next;
+    }
+
+    // 最后释放头节点
+    head.reset();
   }
 
   // 插入或更新键值对
