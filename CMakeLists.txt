@@ -57,39 +57,11 @@ endif()
 find_package(spdlog REQUIRED)
 
 # 查找 asio (通常作为 header-only 库)
-find_path(ASIO_INCLUDE_DIR asio.hpp PATHS /usr/include /usr/local/include)
-if(NOT ASIO_INCLUDE_DIR)
-    message(FATAL_ERROR "asio not found")
-endif()
+find_package(asio REQUIRED)
 
 # toml11 是 header-only 库，尝试多种查找方式
-find_path(TOML11_INCLUDE_DIR 
-    NAMES toml.hpp toml11/toml.hpp
-    PATHS 
-        /usr/include 
-        /usr/local/include 
-        /opt/homebrew/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/toml11/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/deps/toml11/include
-)
+find_package(toml11)
 
-if(NOT TOML11_INCLUDE_DIR)
-    message(STATUS "toml11 not found in system paths, trying to find via pkg-config")
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(TOML11 QUIET toml11)
-        if(TOML11_FOUND)
-            set(TOML11_INCLUDE_DIR ${TOML11_INCLUDE_DIRS})
-        endif()
-    endif()
-endif()
-
-if(NOT TOML11_INCLUDE_DIR)
-    message(WARNING "toml11 not found. You may need to install it or set TOML11_INCLUDE_DIR manually.")
-    message(STATUS "On macOS with Homebrew: brew install toml11")
-    message(STATUS "Or manually set: -DTOML11_INCLUDE_DIR=/path/to/toml11/include")
-    message(FATAL_ERROR "toml11 is required but not found")
-endif()
 
 message(STATUS "Found toml11 at: ${TOML11_INCLUDE_DIR}")
 
